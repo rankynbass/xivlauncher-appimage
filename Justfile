@@ -44,18 +44,27 @@ clean:
 # Creates a git tag according to the current date, or a given tag.
 [group('git')]
 tag-commit config-name custom-tag="":
-    #!/usr/bin/env ruby
-    require 'json'
-    config = JSON.parse(File.read(File.join(Dir.pwd, "appimage-build", "config.json")))["{{ config-name }}"]
-    prefix = config["short_name"]
-    full_tag = "#{config["short_name"]}/#{config["version"]}/"
-    tags = `"{{ git }}" tag`.split.map(&:strip)
-    if "{{ custom-tag }}".empty?
-      full_tag += Time.now.strftime("%Y-%m-%d")
-    else
-      full_tag += "{{ custom-tag }}"
-    end
-    tags.reject!{|i| /^#{full_tag}(\.(\d+))*$/.match(i).nil?}
-    full_tag += ".#{tags.length}" if tags.length > 0
-    `"{{ git }}" tag #{full_tag}`
-    puts full_tag
+    #!/usr/bin/env python3
+    import json
+    import os
+    import re
+    import subprocess
+    from datetime import datetime
+
+    def sh(*args):
+        return subprocess.run([str(a) for a in args], capture_output=True, text=True).stdout
+
+    config = json.load(open(os.path.join(os.getcwd(), "appimage-build", "config.json")))["{{ config-name }}"]
+
+    full_tag = "%s/%s/" % (config["short_name"], config["version"])
+    tags = [t.strip() for t in sh("{{ git }}", "tag").split()]
+
+    custom_tag = "{{ custom-tag }}"
+    full_tag += custom_tag if custom_tag else datetime.now().strftime("%Y-%m-%d")
+
+    tags = [t for t in tags if re.match(r"^%s(\.(\d+))*$" % re.escape(full_tag), t)]
+    if tags:
+        full_tag += ".%d" % len(tags)
+
+    sh("{{ git }}", "tag", full_tag)
+    print(full_tag)
