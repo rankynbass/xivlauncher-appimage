@@ -33,6 +33,9 @@ create-appimage config-name="xivlauncher": extract-appimagetool (download config
     def sh(*args):
         return subprocess.run([str(a) for a in args], capture_output=True, text=True).stdout
 
+    def sh_nocap(*args):
+        return subprocess.run([str(a) for a in args])
+
     def mkdir_p(path):
         os.makedirs(path, exist_ok=True)
 
@@ -106,6 +109,8 @@ create-appimage config-name="xivlauncher": extract-appimagetool (download config
     XIVLAUNCHER_PACKAGES = [p.strip() for p in _packages.split(";")] if _packages else []
     _remove_files = gcv("remove_files", True)
     XIVLAUNCHER_REMOVE_FILES = [f.strip() for f in _remove_files.split(";")] if _remove_files else []
+    print("Packages: ", XIVLAUNCHER_PACKAGES)
+    print("Remove files: ", XIVLAUNCHER_REMOVE_FILES)
 
     PWD = os.getcwd()
     APPDIR = os.path.join(PWD, "appdir", XIVLAUNCHER_EXEC_NAME)
@@ -164,7 +169,7 @@ create-appimage config-name="xivlauncher": extract-appimagetool (download config
         rm_rf(os.path.join(INSTALL_PATH, remove_file))
 
     if "cimgui.so" in XIVLAUNCHER_REMOVE_FILES or "ImGuiImplSDL3.so" in XIVLAUNCHER_REMOVE_FILES:
-        sh("just", "download-imgui")
+        sh_nocap("just", "download-imgui")
         for obj in glob.glob(os.path.join("{{ src_dir }}", "_build", "*.so")):
             cp(obj, INSTALL_PATH)
 
@@ -322,6 +327,8 @@ extract-appimagetool:
 download-imgui:
     #!/usr/bin/env bash
     set -ueox pipefail
+
+    echo "Building cimgui"
 
     build_dir="{{ src_dir }}/_build"
     mkdir -p "{{ src_dir }}"
