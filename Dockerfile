@@ -1,5 +1,7 @@
 FROM registry.gitlab.steamos.cloud/steamrt/sniper/sdk
 
+RUN sed -i 's|http://deb\.debian\.org|http://archive\.debian\.org|g' /etc/apt/sources.list
+
 RUN apt-get update && apt-get install -y \
     file \
     git \
